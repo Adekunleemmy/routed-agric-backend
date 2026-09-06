@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.env
+.env.local
+.env.example
+uploads/
+*.log
+backend_specification.md
+FRONTEND_INTEGRATION_GUIDE.md

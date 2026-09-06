@@ -1,0 +1,62 @@
+{
+  "name": "ruuted-backend",
+  "version": "1.0.0",
+  "description": "RUUTED Agricultural Platform - Production Backend & Real-time Escrow Architecture",
+  "main": "dist/server.js",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "dev": "tsx watch src/server.ts",
+    "seed": "tsx prisma/seed.ts",
+    "prisma:generate": "prisma generate",
+    "prisma:push": "prisma db push",
+    "test:api": "tsx test/run_all_tests.ts"
+  },
+  "keywords": [
+    "agriculture",
+    "marketplace",
+    "escrow",
+    "websockets",
+    "ai",
+    "gemini",
+    "prisma",
+    "postgresql",
+    "nigeria"
+  ],
+  "author": "RUUTED Engineering",
+  "license": "MIT",
+  "dependencies": {
+    "@google/generative-ai": "^0.24.0",
+    "@prisma/client": "^6.4.1",
+    "bcryptjs": "^3.0.2",
+    "cloudinary": "^2.5.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "helmet": "^8.0.0",
+    "ioredis": "^5.6.0",
+    "jsonwebtoken": "^9.0.2",
+    "morgan": "^1.10.0",
+    "multer": "^1.4.5-lts.1",
+    "socket.io": "^4.8.1",
+    "swagger-ui-express": "^5.0.1",
+    "yamljs": "^0.3.0",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/jsonwebtoken": "^9.0.9",
+    "@types/morgan": "^1.9.9",
+    "@types/multer": "^1.4.12",
+    "@types/node": "^22.13.9",
+    "@types/swagger-ui-express": "^4.1.8",
+    "@types/yamljs": "^0.2.34",
+    "prisma": "^6.4.1",
+    "socket.io-client": "^4.8.1",
+    "tsx": "^4.19.3",
+    "typescript": "^5.7.3"
+  }
+}

@@ -1,0 +1,210 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  buyer
+  farmer
+  admin
+}
+
+enum ProduceStatus {
+  available
+  low_stock
+  sold_out
+}
+
+enum OrderStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  COMPLETED
+}
+
+enum NegotiationType {
+  PRICE_COUNTER
+  QUANTITY_CHANGE
+  LOCATION_CHANGE
+}
+
+enum NegotiationStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+}
+
+model User {
+  id             String          @id @default(uuid())
+  name           String          @db.VarChar(150)
+  email          String          @unique @db.VarChar(255)
+  passwordHash   String          @map("password_hash") @db.VarChar(255)
+  phoneNumber    String          @map("phone_number") @db.VarChar(30)
+  role           Role            @default(buyer)
+  state          String          @db.VarChar(100)
+  lga            String          @db.VarChar(100)
+  profilePicture String?         @map("profile_picture") @db.Text
+  createdAt      DateTime        @default(now()) @map("created_at")
+
+  farmerProfile  FarmerProfile?
+  listings       ProduceListing[]
+  buyerOrders    Order[]         @relation("BuyerOrders")
+  farmerOrders   Order[]         @relation("FarmerOrders")
+  negotiations   OrderNegotiation[]
+  pestDiagnoses  PestDiagnosis[]
+  savedKnowledge SavedKnowledge[]
+
+  @@map("users")
+}
+
+model FarmerProfile {
+  id           String   @id @default(uuid())
+  userId       String   @unique @map("user_id")
+  farmName     String   @map("farm_name") @db.VarChar(200)
+  farmLocation String   @map("farm_location") @db.Text
+  description  String?  @db.Text
+  rating       Decimal  @default(5.00) @db.Decimal(3, 2)
+  isVerified   Boolean  @default(false) @map("is_verified")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("farmer_profiles")
+}
+
+model ProduceListing {
+  id                String        @id @default(uuid())
+  farmerId          String        @map("farmer_id")
+  productName       String        @map("product_name") @db.VarChar(200)
+  category          String        @db.VarChar(50)
+  description       String        @db.Text
+  quantityAvailable Int           @map("quantity_available")
+  unit              String        @db.VarChar(20)
+  pricePerUnit      Decimal       @map("price_per_unit") @db.Decimal(12, 2)
+  state             String        @db.VarChar(100)
+  lga               String        @db.VarChar(100)
+  harvestDate       DateTime      @map("harvest_date")
+  images            String[]      @map("images")
+  status            ProduceStatus @default(available)
+  createdAt         DateTime      @default(now()) @map("created_at")
+
+  farmer            User          @relation(fields: [farmerId], references: [id], onDelete: Cascade)
+  orders            Order[]
+
+  @@map("produce_listings")
+}
+
+model Order {
+  id              String            @id @db.VarChar(50)
+  buyerId         String            @map("buyer_id")
+  farmerId        String            @map("farmer_id")
+  listingId       String            @map("listing_id")
+  quantity        Int
+  unit            String            @db.VarChar(20)
+  unitPrice       Decimal           @map("unit_price") @db.Decimal(12, 2)
+  totalAmount     Decimal           @map("total_amount") @db.Decimal(12, 2)
+  deliveryState   String            @map("delivery_state") @db.VarChar(100)
+  deliveryLga     String            @map("delivery_lga") @db.VarChar(100)
+  deliveryAddress String            @map("delivery_address") @db.Text
+  preferredDate   DateTime          @map("preferred_date")
+  buyerNote       String?           @map("buyer_note") @db.Text
+  status          OrderStatus       @default(PENDING)
+  rejectionReason String?           @map("rejection_reason") @db.Text
+  escrowFunded    Boolean           @default(false) @map("escrow_funded")
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt       DateTime          @default(now()) @updatedAt @map("updated_at")
+
+  buyer           User              @relation("BuyerOrders", fields: [buyerId], references: [id])
+  farmer          User              @relation("FarmerOrders", fields: [farmerId], references: [id])
+  listing         ProduceListing    @relation(fields: [listingId], references: [id])
+  negotiations    OrderNegotiation[]
+  messages        Message[]
+
+  @@map("orders")
+}
+
+model OrderNegotiation {
+  id            String            @id @default(uuid())
+  orderId       String            @map("order_id") @db.VarChar(50)
+  senderId      String            @map("sender_id")
+  senderRole    String            @map("sender_role") @db.VarChar(20)
+  type          NegotiationType
+  proposedValue String            @map("proposed_value") @db.Text
+  previousValue String            @map("previous_value") @db.Text
+  status        NegotiationStatus @default(PENDING)
+  createdAt     DateTime          @default(now()) @map("created_at")
+
+  order         Order             @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  sender        User              @relation(fields: [senderId], references: [id])
+  messages      Message[]
+
+  @@map("order_negotiations")
+}
+
+model Message {
+  id         String            @id @default(uuid())
+  orderId    String            @map("order_id") @db.VarChar(50)
+  senderId   String            @map("sender_id")
+  text       String            @db.Text
+  isMasked   Boolean           @default(false) @map("is_masked")
+  proposalId String?           @map("proposal_id")
+  isRead     Boolean           @default(false) @map("is_read")
+  createdAt  DateTime          @default(now()) @map("created_at")
+
+  order      Order             @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  proposal   OrderNegotiation? @relation(fields: [proposalId], references: [id])
+
+  @@map("messages")
+}
+
+model PestDiagnosis {
+  id                 String        @id @default(uuid())
+  userId             String        @map("user_id")
+  crop               String        @db.VarChar(100)
+  affectedPart       String        @map("affected_part") @db.VarChar(50)
+  startedAgo         String        @map("started_ago") @db.VarChar(50)
+  description        String        @db.Text
+  imageUrl           String?       @map("image_url") @db.Text
+  possibleProblem    String        @map("possible_problem") @db.VarChar(255)
+  confidence         String        @db.VarChar(20)
+  explanation        String        @db.Text
+  possibleCauses     String[]      @map("possible_causes")
+  recommendedActions String[]      @map("recommended_actions")
+  prevention         String[]      @map("prevention")
+  createdAt          DateTime      @default(now()) @map("created_at")
+
+  user               User          @relation(fields: [userId], references: [id])
+  messages           PestMessage[]
+
+  @@map("pest_diagnoses")
+}
+
+model PestMessage {
+  id          String        @id @default(uuid())
+  diagnosisId String        @map("diagnosis_id")
+  sender      String        @db.VarChar(20) // user | ai
+  text        String        @db.Text
+  createdAt   DateTime      @default(now()) @map("created_at")
+
+  diagnosis   PestDiagnosis @relation(fields: [diagnosisId], references: [id], onDelete: Cascade)
+
+  @@map("pest_messages")
+}
+
+model SavedKnowledge {
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  category    String   @db.VarChar(100)
+  title       String   @db.VarChar(255)
+  summary     String   @db.Text
+  fullContent String   @map("full_content") @db.Text
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user        User     @relation(fields: [userId], references: [id])
+
+  @@map("saved_knowledge")
+}
